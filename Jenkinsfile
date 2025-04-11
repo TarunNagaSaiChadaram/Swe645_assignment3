@@ -1,42 +1,55 @@
 pipeline {
     agent any
+
     environment {
-        REPO_NAME = "tarunchadaram/stusurvey-app"
-        TAG = "${env.BUILD_ID}"
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials') // Jenkins Credentials ID
+        IMAGE_NAME = 'tarunchadaram/stusurvey-app'
     }
+
     stages {
-        stage("Checkout Code") {
+        stage('Checkout Code') {
             steps {
-                script {
-                    checkout scm
-                }
+                git 'https://github.com/TarunNagaSaiChadaram/Swe645_assignment3.git'
             }
         }
-        stage("Build and Push Docker Image") {
+
+        stage('Build with Maven') {
             steps {
-                script {
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
-                        sh "echo \$DOCKERHUB_PASSWORD | docker login -u \$DOCKERHUB_USERNAME --password-stdin"
-                    }
-                    // Build image with both versioned and latest tags
-                    sh "docker build -t $REPO_NAME:$TAG -t $REPO_NAME:latest ."
-                    
-                    // Push both tags
-                    sh "docker push $REPO_NAME:$TAG"
-                    sh "docker push $REPO_NAME:latest"
-                }
+                sh 'mvn clean package -DskipTests'
             }
         }
-        stage("Deploy to Rancher Kubernetes Cluster") {
+
+        stage('Build and Push Docker Image') {
             steps {
                 script {
-                    sh "sed -i 's|IMAGE_NAME|$REPO_NAME:$TAG|g' deployment.yaml"
-                    withCredentials([file(credentialsId: 'kubernetes', variable: 'KUBECONFIG')]) {
-                        sh "kubectl --kubeconfig=$KUBECONFIG apply -f deployment.yaml"
-                        sh "kubectl --kubeconfig=$KUBECONFIG apply -f service.yaml"
+                    def imageTag = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+                    docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials') {
+                        def image = docker.build("${IMAGE_NAME}:${imageTag}")
+                        image.push()
+                        image.push('latest')
                     }
                 }
             }
+        }
+
+        stage('Deploy to Rancher Kubernetes Cluster') {
+            when {
+                expression { currentBuild.currentResult == 'SUCCESS' }
+            }
+            steps {
+                echo 'Deploy step goes here. Skipping for now.'
+                // Example:
+                // sh 'kubectl apply -f k8s/deployment.yaml'
+            }
+        }
+    }
+
+    post {
+        failure {
+            echo 'Pipeline failed!'
+        }
+        success {
+            echo 'Pipeline succeeded!'
         }
     }
 }
