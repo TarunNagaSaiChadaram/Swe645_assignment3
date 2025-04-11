@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Config
+clusters:
+- name: "kubernetes-cluster-645"
+  cluster:
+    server: "https://50.17.204.71/k8s/clusters/c-m-qnh5gj7j"
+    certificate-authority-data: "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUJ2akNDQ\
+      VdPZ0F3SUJBZ0lCQURBS0JnZ3Foa2pPUFFRREFqQkdNUnd3R2dZRFZRUUtFeE5rZVc1aGJXbGoKY\
+      kdsemRHVnVaWEl0YjNKbk1TWXdKQVlEVlFRRERCMWtlVzVoYldsamJHbHpkR1Z1WlhJdFkyRkFNV\
+      GMwTkRJMApNek0xTWpBZUZ3MHlOVEEwTVRBd01EQXlNekphRncwek5UQTBNRGd3TURBeU16SmFNR\
+      Vl4SERBYUJnTlZCQW9UCkUyUjVibUZ0YVdOc2FYTjBaVzVsY2kxdmNtY3hKakFrQmdOVkJBTU1IV\
+      1I1Ym1GdGFXTnNhWE4wWlc1bGNpMWoKWVVBeE56UTBNalF6TXpVeU1Ga3dFd1lIS29aSXpqMENBU\
+      VlJS29aSXpqMERBUWNEUWdBRXRNSk9xRWxnNjJ6OApSWE9ERE1MZ1ZkVGEwMDZWdXE2ckRSUHZWd\
+      XVFZVlrTmlveDBOdXR6eTJoVUpDTkpDZ3NoVFVqWmRQRWVFTkxpCmZ4V2ExOVdyd0tOQ01FQXdEZ\
+      1lEVlIwUEFRSC9CQVFEQWdLa01BOEdBMVVkRXdFQi93UUZNQU1CQWY4d0hRWUQKVlIwT0JCWUVGT\
+      FZuOXRvNUlXbUQ1cUlxUVRtWWJ0VDNxcUVNTUFvR0NDcUdTTTQ5QkFNQ0Ewa0FNRVlDSVFDMgpwU\
+      VBVcUx3MkZ1aHREdlh4YlJIMFVhd213R05wNlc5K1JIVFdTazhhM1FJaEFKZWIxTTlrTjFnOEN5d\
+      3JJZzZJCkdIYlRpeVNpaFU0NEJKbGtnMHZ3RE5kYgotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0t"
+
+users:
+- name: "kubernetes-cluster-645"
+  user:
+    token: "kubeconfig-user-wqfrtthhpb:thqkrkqs4dj25f8vxcwb7rtb6wrjcjlgglplc27cbgdxscskzvzm5k"
+
+
+contexts:
+- name: "kubernetes-cluster-645"
+  context:
+    user: "kubernetes-cluster-645"
+    cluster: "kubernetes-cluster-645"
+
+current-context: "kubernetes-cluster-645"
