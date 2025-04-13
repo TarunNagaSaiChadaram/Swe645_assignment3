@@ -9,7 +9,8 @@ pipeline {
     stages {
         stage('Checkout Code') {
             steps {
-                git 'https://github.com/TarunNagaSaiChadaram/Swe645_assignment3.git'
+                git branch: 'main',
+                    url: 'https://github.com/TarunNagaSaiChadaram/Swe645_assignment3.git'
             }
         }
 
