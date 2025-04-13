@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials') // Jenkins Credentials ID
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub') // Jenkins Credentials ID
         IMAGE_NAME = 'tarunchadaram/stusurvey-app'
     }
 
@@ -23,7 +23,7 @@ pipeline {
             steps {
                 script {
                     def imageTag = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
-                    docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials') {
+                    docker.withRegistry('https://index.docker.io/v1/', 'dockerhub') {
                         def image = docker.build("${IMAGE_NAME}:${imageTag}")
                         image.push()
                         image.push('latest')
