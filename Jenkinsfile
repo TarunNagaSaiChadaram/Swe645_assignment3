@@ -1,4 +1,3 @@
-
 pipeline {
     agent any
 
@@ -18,6 +17,7 @@ pipeline {
         stage('Build with Maven') {
             steps {
                 sh 'mvn clean package'
+                archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
             }
         }
 
@@ -35,8 +35,6 @@ pipeline {
         stage('Deploy to Rancher Kubernetes Cluster') {
             steps {
                 script {
-                    // Example shell command to trigger kubectl apply
-                    // Make sure your Jenkins agent has access to kubeconfig
                     sh '''
                     echo "Deploying to Rancher cluster..."
                     kubectl set image deployment/stusurvey stusurvey=${DOCKER_IMAGE}:${IMAGE_TAG} -n your-namespace
@@ -48,11 +46,14 @@ pipeline {
     }
 
     post {
-        failure {
-            echo 'Pipeline failed!'
-        }
         success {
-            echo 'Pipeline completed successfully.'
+            echo '✅ Pipeline completed successfully.'
+        }
+        failure {
+            echo '❌ Pipeline failed.'
+        }
+        always {
+            cleanWs()
         }
     }
 }
