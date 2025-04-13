@@ -1,43 +1,44 @@
 pipeline {
     agent any
-
-    environment {
-        IMAGE_NAME = "tarunchadaram/stusurvey-app"
-        IMAGE_TAG = "${env.BUILD_ID}"
-    }
-
     stages {
-        stage("Checkout and Build Docker Image for Web App") {
+        stage('Checkout SCM') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build Docker Image') {
             steps {
                 script {
-                    checkout scm
-
-                    // Login to DockerHub using your credentials
+                    // Docker login using credentials stored in Jenkins
                     withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
-                        sh "docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_PASSWORD"
+                        sh '''
+                            echo "$DOCKERHUB_PASSWORD" | docker login -u $DOCKERHUB_USERNAME --password-stdin
+                        '''
                     }
 
-                    // Build Docker image directly from the root of the repository
-                    sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
+                    // Build the Docker image
+                    sh "docker build -t tarunchadaram/stusurvey-app:${env.BUILD_ID} ."
                 }
             }
         }
 
-        stage("Push Image to DockerHub") {
+        stage('Push Image to DockerHub') {
             steps {
                 script {
-                    sh "docker push ${IMAGE_NAME}:${IMAGE_TAG}"
+                    // Push the built image to DockerHub
+                    sh "docker push tarunchadaram/stusurvey-app:${env.BUILD_ID}"
                 }
             }
         }
 
-        stage("Deploy to Rancher Kubernetes Cluster") {
+        stage('Deploy to Rancher Kubernetes Cluster') {
             steps {
                 script {
-                    // Replace placeholder with actual image tag in deployment.yaml
-                    sh "sed -i 's|IMAGE_NAME|${IMAGE_NAME}:${IMAGE_TAG}|g' deployment.yaml"
+                    // Update the image name in the deployment.yaml file with the newly built image
+                    sh "sed -i 's|IMAGE_NAME|tarunchadaram/stusurvey-app:${env.BUILD_ID}|g' deployment.yaml"
 
-                    // Use Rancher kubeconfig credentials
+                    // Use Kubernetes config stored in Jenkins credentials to deploy to the cluster
                     withCredentials([file(credentialsId: 'kubernetes', variable: 'KUBECONFIG')]) {
                         sh "kubectl --kubeconfig=$KUBECONFIG apply -f deployment.yaml"
                         sh "kubectl --kubeconfig=$KUBECONFIG apply -f service.yaml"
@@ -48,11 +49,12 @@ pipeline {
     }
 
     post {
-        success {
-            echo "✅ Deployment successful!"
-        }
         failure {
             echo "❌ Deployment failed. Please check the logs."
+        }
+
+        success {
+            echo "✅ Deployment completed successfully!"
         }
     }
 }
