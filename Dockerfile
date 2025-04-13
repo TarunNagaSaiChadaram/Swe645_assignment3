@@ -1,5 +1,10 @@
+FROM maven:3.8.5-openjdk-17 AS build
+WORKDIR /app
+COPY pom.xml .
+COPY src ./src
+RUN mvn clean package
 FROM openjdk:17-jdk-slim
 WORKDIR /app
 COPY target/stusurvey-0.0.1-SNAPSHOT.jar survey-app.jar
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "survey-app.jar"]
+CMD ["java", "-jar", "survey-app.jar"]
