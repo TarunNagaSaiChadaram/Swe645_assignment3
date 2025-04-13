@@ -1,60 +1,40 @@
 pipeline {
     agent any
+    environment {
+        IMAGE_NAME = "tarunchadaram/stusurvey-app"
+        TAG = "${env.BUILD_ID}"
+    }
     stages {
-        stage('Checkout SCM') {
-            steps {
-                checkout scm
-            }
-        }
-
-        stage('Build Docker Image') {
+        stage("Checkout Code") {
             steps {
                 script {
-                    // Docker login using credentials stored in Jenkins
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
-                        sh '''
-                            echo "$DOCKERHUB_PASSWORD" | docker login -u $DOCKERHUB_USERNAME --password-stdin
-                        '''
+                    checkout scm
+                }
+            }
+        }
+        stage("Build and Push Docker Image") {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'DockerHub', usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
+                        sh "echo \$DOCKERHUB_PASSWORD | docker login -u \$DOCKERHUB_USERNAME --password-stdin"
                     }
-
-                    // Build the Docker image
-                    sh "docker build -t tarunchadaram/stusurvey-app:${env.BUILD_ID} ."
+                    sh "docker build -t $IMAGE_NAME:$TAG ."
+                    sh "docker push $IMAGE_NAME:$TAG"
+                    sh "docker tag $IMAGE_NAME:$TAG $IMAGE_NAME:latest"
+                    sh "docker push $IMAGE_NAME:latest"
                 }
             }
         }
-
-        stage('Push Image to DockerHub') {
+        stage("Deploy to Rancher Kubernetes Cluster") {
             steps {
                 script {
-                    // Push the built image to DockerHub
-                    sh "docker push tarunchadaram/stusurvey-app:${env.BUILD_ID}"
-                }
-            }
-        }
-
-        stage('Deploy to Rancher Kubernetes Cluster') {
-            steps {
-                script {
-                    // Update the image name in the deployment.yaml file with the newly built image
-                    sh "sed -i 's|IMAGE_NAME|tarunchadaram/stusurvey-app:${env.BUILD_ID}|g' deployment.yaml"
-
-                    // Use Kubernetes config stored in Jenkins credentials to deploy to the cluster
+                    sh "sed -i 's|IMAGE_NAME|$IMAGE_NAME:$TAG|g' deployment.yaml"
                     withCredentials([file(credentialsId: 'kubernetes', variable: 'KUBECONFIG')]) {
                         sh "kubectl --kubeconfig=$KUBECONFIG apply -f deployment.yaml"
                         sh "kubectl --kubeconfig=$KUBECONFIG apply -f service.yaml"
                     }
                 }
             }
-        }
-    }
-
-    post {
-        failure {
-            echo "❌ Deployment failed. Please check the logs."
-        }
-
-        success {
-            echo "✅ Deployment completed successfully!"
         }
     }
 }
