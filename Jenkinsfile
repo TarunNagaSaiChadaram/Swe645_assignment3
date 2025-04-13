@@ -1,46 +1,48 @@
+
 pipeline {
     agent any
 
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub') // Jenkins Credentials ID
-        IMAGE_NAME = 'tarunchadaram/stusurvey-app'
+        REGISTRY_CREDENTIALS = 'dockerhub'  // Replace with your Jenkins credential ID
+        DOCKER_IMAGE = 'tarunchadaram/stusurvey-app'
+        IMAGE_TAG = "${env.BUILD_ID}"
     }
 
     stages {
         stage('Checkout Code') {
             steps {
-                git branch: 'main',
-                    url: 'https://github.com/TarunNagaSaiChadaram/Swe645_assignment3.git'
+                checkout scm
             }
         }
 
         stage('Build with Maven') {
             steps {
-                sh 'mvn clean package -DskipTests'
+                sh 'mvn clean package'
             }
         }
 
         stage('Build and Push Docker Image') {
             steps {
                 script {
-                    def imageTag = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
-                    docker.withRegistry('https://index.docker.io/v1/', 'dockerhub') {
-                        def image = docker.build("${IMAGE_NAME}:${imageTag}")
+                    def image = docker.build("${DOCKER_IMAGE}:${IMAGE_TAG}")
+                    docker.withRegistry('https://index.docker.io/v1/', REGISTRY_CREDENTIALS) {
                         image.push()
-                        image.push('latest')
                     }
                 }
             }
         }
 
         stage('Deploy to Rancher Kubernetes Cluster') {
-            when {
-                expression { currentBuild.currentResult == 'SUCCESS' }
-            }
             steps {
-                echo 'Deploy step goes here. Skipping for now.'
-                // Example:
-                // sh 'kubectl apply -f k8s/deployment.yaml'
+                script {
+                    // Example shell command to trigger kubectl apply
+                    // Make sure your Jenkins agent has access to kubeconfig
+                    sh '''
+                    echo "Deploying to Rancher cluster..."
+                    kubectl set image deployment/stusurvey stusurvey=${DOCKER_IMAGE}:${IMAGE_TAG} -n your-namespace
+                    kubectl rollout status deployment/stusurvey -n your-namespace
+                    '''
+                }
             }
         }
     }
@@ -50,7 +52,7 @@ pipeline {
             echo 'Pipeline failed!'
         }
         success {
-            echo 'Pipeline succeeded!'
+            echo 'Pipeline completed successfully.'
         }
     }
 }
