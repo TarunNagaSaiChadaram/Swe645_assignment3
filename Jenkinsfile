@@ -2,44 +2,46 @@ pipeline {
     agent any
 
     environment {
-        REGISTRY_CREDENTIALS = 'dockerhub'  // Replace with your Jenkins credential ID
-        DOCKER_IMAGE = 'tarunchadaram/stusurvey-app'
+        IMAGE_NAME = "tarunchadaram/stusurvey-app"
         IMAGE_TAG = "${env.BUILD_ID}"
     }
 
     stages {
-        stage('Checkout Code') {
-            steps {
-                checkout scm
-            }
-        }
-
-        stage('Build with Maven') {
-            steps {
-                sh 'mvn clean package'
-                archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
-            }
-        }
-
-        stage('Build and Push Docker Image') {
+        stage("Checkout and Build Docker Image for Web App") {
             steps {
                 script {
-                    def image = docker.build("${DOCKER_IMAGE}:${IMAGE_TAG}")
-                    docker.withRegistry('https://index.docker.io/v1/', REGISTRY_CREDENTIALS) {
-                        image.push()
+                    checkout scm
+
+                    // Login to DockerHub using your credentials
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
+                        sh "docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_PASSWORD"
                     }
+
+                    // Build Docker image directly from the root of the repository
+                    sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
                 }
             }
         }
 
-        stage('Deploy to Rancher Kubernetes Cluster') {
+        stage("Push Image to DockerHub") {
             steps {
                 script {
-                    sh '''
-                    echo "Deploying to Rancher cluster..."
-                    kubectl set image deployment/stusurvey stusurvey=${DOCKER_IMAGE}:${IMAGE_TAG} -n your-namespace
-                    kubectl rollout status deployment/stusurvey -n your-namespace
-                    '''
+                    sh "docker push ${IMAGE_NAME}:${IMAGE_TAG}"
+                }
+            }
+        }
+
+        stage("Deploy to Rancher Kubernetes Cluster") {
+            steps {
+                script {
+                    // Replace placeholder with actual image tag in deployment.yaml
+                    sh "sed -i 's|IMAGE_NAME|${IMAGE_NAME}:${IMAGE_TAG}|g' deployment.yaml"
+
+                    // Use Rancher kubeconfig credentials
+                    withCredentials([file(credentialsId: 'kubernetes', variable: 'KUBECONFIG')]) {
+                        sh "kubectl --kubeconfig=$KUBECONFIG apply -f deployment.yaml"
+                        sh "kubectl --kubeconfig=$KUBECONFIG apply -f service.yaml"
+                    }
                 }
             }
         }
@@ -47,13 +49,10 @@ pipeline {
 
     post {
         success {
-            echo '✅ Pipeline completed successfully.'
+            echo "✅ Deployment successful!"
         }
         failure {
-            echo '❌ Pipeline failed.'
-        }
-        always {
-            cleanWs()
+            echo "❌ Deployment failed. Please check the logs."
         }
     }
 }
