@@ -3,11 +3,10 @@ kind: Service
 metadata:
   name: webapp-service
 spec:
-  selector:
-    app: hw3  
-  ports:
-    - protocol: TCP
-      port: 80
-      targetPort: 8080
-      nodePort: 32001
   type: NodePort
+  selector:
+    app: hw3
+  ports:
+    - port: 8080      
+      targetPort: 8080 
+      nodePort: 32001 
