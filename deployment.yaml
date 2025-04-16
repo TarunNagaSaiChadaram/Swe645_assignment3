@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: hw3-container
-        image: tarunchadaram/stusurvey:latest  
+        image: tarunchadaram/stusurvey-app:latest  
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
