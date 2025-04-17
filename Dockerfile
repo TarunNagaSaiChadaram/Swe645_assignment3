@@ -1,7 +1,7 @@
-# -Done By,Samanvitha Matta,G01252738-->
-# <!--Akshaya Reddy Dundigalla,G01482843-->
-# <!--Tarun Naga Sai Chadaram,G01445928-->
-# <!--The Student Survey Spring Boot application is developed using a multi-stage Dockerfile. The first stage utilizes Maven to build the application, and the second stage uses OpenJDK 17 to run the generated JAR-->
+<!-Done By,Samanvitha Matta,G01252738-->
+<!--Akshaya Reddy Dundigalla,G01482843-->
+<!--Tarun Naga Sai Chadaram,G01445928-->
+<!--The Student Survey Spring Boot application is developed using a multi-stage Dockerfile. The first stage utilizes Maven to build the application, and the second stage uses OpenJDK 17 to run the generated JAR-->
 
 
 FROM maven:3.8.5-openjdk-17 AS build
